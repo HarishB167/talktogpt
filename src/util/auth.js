@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useContext,
-  createContext,
-} from 'react';
+import React, { useState, useEffect, useMemo, useContext, createContext } from 'react';
 import queryString from 'query-string';
 import supabase from './supabase';
 import { useUser, updateUser } from './db';
@@ -60,9 +54,7 @@ function useAuthProvider() {
     // If email is unconfirmed throw error to be displayed in UI
     // The user will be confirmed automatically if email confirmation is disabled in Supabase settings
     if (!user.email_confirmed_at) {
-      throw new Error(
-        'Thanks for signing up! Please check your email to complete the process.'
-      );
+      throw new Error('Thanks for signing up! Please check your email to complete the process.');
     }
 
     // Update user in state
@@ -71,17 +63,11 @@ function useAuthProvider() {
   };
 
   const signup = (email, password) => {
-    return supabase.auth
-      .signUp({ email, password })
-      .then(handleError)
-      .then(handleAuth);
+    return supabase.auth.signUp({ email, password }).then(handleError).then(handleAuth);
   };
 
   const signin = (email, password) => {
-    return supabase.auth
-      .signInWithPassword({ email, password })
-      .then(handleError)
-      .then(handleAuth);
+    return supabase.auth.signInWithPassword({ email, password }).then(handleError).then(handleAuth);
   };
 
   const signinWithProvider = (name) => {
@@ -143,9 +129,7 @@ function useAuthProvider() {
     // Will be persisted to the database by our Supabase trigger once process is completed
     if (email && email !== user.email) {
       await supabase.auth.updateUser({ email }).then(handleError);
-      throw new Error(
-        'To complete this process click the confirmation links sent to your new and old email addresses'
-      );
+      throw new Error('To complete this process click the confirmation links sent to your new and old email addresses');
     }
 
     // Persist all other data to the database
@@ -234,9 +218,7 @@ function useFormatUser(user) {
         planId: getFriendlyPlanId(customer.stripePriceId),
       }),
       // Add `planIsActive: true` if subscription status is active or trialing
-      planIsActive: ['active', 'trialing'].includes(
-        customer.stripeSubscriptionStatus
-      ),
+      planIsActive: ['active', 'trialing'].includes(customer.stripeSubscriptionStatus),
     };
   }, [user]);
 }

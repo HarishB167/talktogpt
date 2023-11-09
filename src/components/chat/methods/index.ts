@@ -1,12 +1,13 @@
 import { VoiceCommand } from '../../../types/useWhisperTypes';
 import wordsToNumbers from 'words-to-numbers';
-import { TERMINATOR_WORDS, WAKE_WORDS, VOICE_COMMANDS } from '../constants';
+import { TERMINATOR_WORDS, WAKE_WORDS, VOICE_COMMANDS, BE_CONCISE } from '../constants';
 import { Message } from 'ai';
 
 type VoiceCommandAction =
   | { type: 'SET_IS_AUTO_STOP'; value: boolean }
   | { type: 'SET_AUTO_STOP_TIMEOUT'; value: number | string }
   | { type: 'SET_MICROPHONE_OFF'; value: boolean }
+  | { type: 'SAVE_CONVERSATION_N_MINS'; value: number | string }
   | { type: 'SHOW_MESSAGE'; messageType: 'error' | 'success'; message: string }
   | null;
 
@@ -35,6 +36,17 @@ export const getVoiceCommandAction = (voiceCommand: VoiceCommand): VoiceCommandA
     case VOICE_COMMANDS.MAKE_AUTO_STOP.command:
       return { type: 'SET_AUTO_STOP_TIMEOUT', value: voiceCommand.args };
 
+    case VOICE_COMMANDS.SAVE_CONVERSATION_N_MINS.command:
+      if (voiceCommand.args && typeof voiceCommand.args === 'number') {
+        return { type: 'SAVE_CONVERSATION_N_MINS', value: voiceCommand.args };
+      } else {
+        return {
+          type: 'SHOW_MESSAGE',
+          messageType: 'error',
+          message: 'Incorrect voice command. The value must be a number.',
+        };
+      }
+
     default:
       return null;
   }
@@ -61,6 +73,13 @@ export const checkIsVoiceCommand = (text: string): VoiceCommand | undefined => {
             .filter((c) => c.index !== -1);
 
           return { ...voiceCommand, args: commands.length > 0 ? commands[0].command : '' };
+        } else if (voiceCommand.command === VOICE_COMMANDS.SAVE_CONVERSATION_N_MINS.command) {
+          let args = wordsToNumbers(text);
+          if (typeof args === 'string') {
+            const match = /\d+/.exec(args);
+            args = match ? parseInt(match[0], 10) : 0;
+          }
+          return { ...voiceCommand, args };
         } else {
           return voiceCommand;
         }
@@ -102,7 +121,7 @@ export const removeInitialKeyword = (text: string, wakeWords: string): string =>
     }
   });
   return text;
-}
+};
 
 export const removeTerminatorKeyword = (text: string, terminatorWords: string): string => {
   const end_words = terminatorWords?.split(',') || TERMINATOR_WORDS.split(',');
@@ -127,7 +146,7 @@ export const blobToBase64 = (blob: Blob): Promise<string | null> => {
   });
 };
 
-export const whisperTranscript = async (base64: string): Promise<{status: string, message: string}> => {
+export const whisperTranscript = async (base64: string): Promise<{ status: string; message: string }> => {
   console.log('WHISPER');
   try {
     const body = {
@@ -144,13 +163,13 @@ export const whisperTranscript = async (base64: string): Promise<{status: string
     return {
       status: 'success',
       message: response?.data?.text || '',
-    }
+    };
   } catch (error) {
     console.warn('whisperTranscript', { error });
     return {
       status: 'error',
-      message: `${error?.message}: ${error?.response?.data}`  || '',
-    }
+      message: `${error?.message}: ${error?.response?.data}` || '',
+    };
   }
 };
 
@@ -199,3 +218,39 @@ export const sanitizeText = (keyword: string): string => {
 
 //   return wake_words_index.toSorted((a, b) => a.index - b.index)[0].index;
 // };
+
+const prepareMessagesForTextExport = (messages: Message[]) => {
+  //
+  let text = '';
+
+  messages.forEach((item) => {
+    text += `${item.role.toUpperCase()}: ${item.content.replace(BE_CONCISE, '')}\n`;
+  });
+
+  return text;
+};
+
+export const extractConversationOfLastNMinutes = (messages: Message[], minutes: number) => {
+  //
+  if (messages.length < 1) return null;
+
+  const filteredMessages = messages.filter((item) => {
+    const messageTime = item.createdAt.getTime();
+    const currentTime = Date.now();
+    const duration = Math.abs(currentTime - messageTime) / (60 * 1000);
+
+    console.log('duration :>> ', duration);
+    if (duration <= minutes) return true;
+    return false;
+  });
+
+  console.log('filteredMessages :>> ', filteredMessages);
+
+  return prepareMessagesForTextExport(filteredMessages);
+
+  // const time = messages[0].createdAt;
+  // console.log('time :>> ', time);
+  // console.log('typeof time :>> ', typeof time);
+  // let newTime = Math.abs(Date.now() - time.getTime()) / (60 * 1000);
+  // console.log('newTime :>> ', newTime);
+};
