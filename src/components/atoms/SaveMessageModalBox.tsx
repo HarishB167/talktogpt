@@ -6,19 +6,29 @@ const SaveConversationModalBox = ({ onClose, text }) => {
   const handleClose = () => {
     onClose();
   };
+
+  const isConversationEmpty = () => {
+    return !(text && text.length > 0);
+  };
+
   return (
     <ModalBox onClose={handleClose}>
       <div className='flex w-full flex-col p-2'>
-        <div
-          className='overflow-auto whitespace-pre-wrap rounded border bg-blue-500 bg-opacity-25 p-2'
-          style={{ maxHeight: '50vh' }}
-        >
-          {text}
-        </div>
-        <div className='mt-10 flex justify-between'>
-          <a href={url} download='Conversation.txt'>
-            <Button>Save</Button>
-          </a>
+        {!isConversationEmpty() && (
+          <div
+            className='overflow-auto whitespace-pre-wrap rounded border bg-blue-500 bg-opacity-25 p-2'
+            style={{ maxHeight: '50vh' }}
+          >
+            {text}
+          </div>
+        )}
+        {isConversationEmpty() && <div className='rounded border bg-red-200 p-3'>No Coversation's to Save</div>}
+        <div className='mt-10 flex justify-around'>
+          {!isConversationEmpty() && (
+            <a href={url} download='Conversation.txt'>
+              <Button>Save</Button>
+            </a>
+          )}
           <Button onClick={handleClose}>Cancel</Button>
         </div>
       </div>

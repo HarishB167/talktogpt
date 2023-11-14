@@ -17,13 +17,13 @@ export default function ModalBox({ onClose, children }) {
       onClick={handleContainerClick}
     >
       <div
-        className='m-auto flex w-4/5 flex-col items-center justify-between border border-solid border-gray-600 p-8'
+        className='m-auto flex w-4/5 flex-col border border-solid border-gray-600 p-3'
         style={{ background: '#fefefe' }}
       >
-        <span className='cursor-pointer self-start' onClick={() => onClose()}>
+        <span className='cursor-pointer self-end' onClick={() => onClose()}>
           <IconCross />
         </span>
-        {children}
+        <div className=' flex  flex-col items-center justify-between p-2'>{children}</div>
       </div>
     </div>
   );
