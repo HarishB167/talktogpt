@@ -36,6 +36,11 @@ export const VOICE_COMMANDS = {
     matcher: /.*save.*minute.*conversation.*/i,
     successMessage: 'Conversation saved.',
   },
+  SUMMARY_OF_N_MINS: {
+    command: 'summary-conversation-n-mins',
+    matcher: /.*(summary|summarize).*minute.*conversation.*/i,
+    successMessage: 'Conversation summarized.',
+  },
 } as const;
 
 export const TALKTOGPT_SOCKET_ENDPOINT =

@@ -8,6 +8,7 @@ type VoiceCommandAction =
   | { type: 'SET_AUTO_STOP_TIMEOUT'; value: number | string }
   | { type: 'SET_MICROPHONE_OFF'; value: boolean }
   | { type: 'SAVE_CONVERSATION_N_MINS'; value: number | string }
+  | { type: 'SUMMARY_OF_N_MINS'; value: number | string }
   | { type: 'SHOW_MESSAGE'; messageType: 'error' | 'success'; message: string }
   | null;
 
@@ -47,6 +48,17 @@ export const getVoiceCommandAction = (voiceCommand: VoiceCommand): VoiceCommandA
         };
       }
 
+    case VOICE_COMMANDS.SUMMARY_OF_N_MINS.command:
+      if (voiceCommand.args && typeof voiceCommand.args === 'number') {
+        return { type: 'SUMMARY_OF_N_MINS', value: voiceCommand.args };
+      } else {
+        return {
+          type: 'SHOW_MESSAGE',
+          messageType: 'error',
+          message: 'Incorrect voice command. The value must be a number.',
+        };
+      }
+
     default:
       return null;
   }
@@ -74,6 +86,13 @@ export const checkIsVoiceCommand = (text: string): VoiceCommand | undefined => {
 
           return { ...voiceCommand, args: commands.length > 0 ? commands[0].command : '' };
         } else if (voiceCommand.command === VOICE_COMMANDS.SAVE_CONVERSATION_N_MINS.command) {
+          let args = wordsToNumbers(text);
+          if (typeof args === 'string') {
+            const match = /\d+/.exec(args);
+            args = match ? parseInt(match[0], 10) : 0;
+          }
+          return { ...voiceCommand, args };
+        } else if (voiceCommand.command === VOICE_COMMANDS.SUMMARY_OF_N_MINS.command) {
           let args = wordsToNumbers(text);
           if (typeof args === 'string') {
             const match = /\d+/.exec(args);
@@ -231,7 +250,6 @@ const prepareMessagesForTextExport = (messages: Message[]) => {
 };
 
 export const extractConversationOfLastNMinutes = (messages: Message[], minutes: number) => {
-  //
   if (messages.length < 1) return null;
 
   const filteredMessages = messages.filter((item) => {
@@ -247,10 +265,43 @@ export const extractConversationOfLastNMinutes = (messages: Message[], minutes: 
   console.log('filteredMessages :>> ', filteredMessages);
 
   return prepareMessagesForTextExport(filteredMessages);
+};
 
-  // const time = messages[0].createdAt;
-  // console.log('time :>> ', time);
-  // console.log('typeof time :>> ', typeof time);
-  // let newTime = Math.abs(Date.now() - time.getTime()) / (60 * 1000);
-  // console.log('newTime :>> ', newTime);
+export const getSummaryOfTextFromGPT = async (text: string, userId: string) => {
+  //
+
+  const res = await fetch(`/api/openai/stream`, {
+    method: 'POST',
+    body: JSON.stringify({
+      messages: [
+        {
+          content: `Make summary of following conversation and ${BE_CONCISE} : "${text}"`,
+          role: 'user',
+        },
+      ],
+      userId,
+    }),
+  });
+
+  const reader = res.body.getReader();
+  let stream = new ReadableStream({
+    start(controller) {
+      return pump();
+      function pump() {
+        return reader.read().then(({ done, value }) => {
+          if (done) {
+            controller.close();
+            return;
+          }
+          controller.enqueue(value);
+          return pump();
+        });
+      }
+    },
+  });
+
+  let newRes = new Response(stream);
+  let data = await newRes.text();
+
+  return data;
 };

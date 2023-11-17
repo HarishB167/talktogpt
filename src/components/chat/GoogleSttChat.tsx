@@ -19,6 +19,7 @@ import {
   removeTerminatorKeyword,
   sanitizeText,
   splitTextsBySeparator,
+  getSummaryOfTextFromGPT,
   whisperTranscript,
 } from './methods';
 import {
@@ -201,7 +202,7 @@ export const GoogleSttChat = () => {
     }
   }, []);
 
-  const { messages, append, input, setInput, handleInputChange } = useChat({
+  const { messages, append, input, setMessages, setInput, handleInputChange } = useChat({
     api: '/api/openai/stream',
     onError: (sendDetectedTranscriptError) => {
       console.error({ sendDetectedTranscriptError });
@@ -555,9 +556,32 @@ export const GoogleSttChat = () => {
     showSuccessMessage(`Saving message...`);
   };
 
+  const handleSummarizeConversation = async (event: any = 'default val') => {
+    const durationInMinutes = event.detail.value;
+    let text = extractConversationOfLastNMinutes(messages, durationInMinutes);
+
+    text = await getSummaryOfTextFromGPT(text, auth.user?.id);
+    text = text.replace(/(\r\n|\n|\r)/gm, '');
+    console.log('Summarized text :>> ', text);
+    setMessages([
+      ...messages,
+      {
+        content: `Make summary of last ${durationInMinutes} minutes conversation`,
+        role: 'user',
+        id: String(Date.now()),
+        createdAt: new Date(),
+      },
+      { content: text, role: 'assistant', id: String(Date.now()), createdAt: new Date() },
+    ]);
+  };
+
   useEffect(() => {
     window.addEventListener('save-conversation', handleSaveConversation);
-    return () => window.removeEventListener('save-conversation', handleSaveConversation);
+    window.addEventListener('summarize-conversation', handleSummarizeConversation);
+    return () => {
+      window.removeEventListener('save-conversation', handleSaveConversation);
+      window.removeEventListener('summarize-conversation', handleSummarizeConversation);
+    };
   }, [messages]);
 
   const toggleIsAutoStop = async (value: boolean) => {
@@ -632,6 +656,16 @@ export const GoogleSttChat = () => {
         console.log('In SAVE_CONVERSATION_N_MINS');
         window.dispatchEvent(
           new CustomEvent('save-conversation', {
+            detail: {
+              value: action.value,
+            },
+          })
+        );
+        break;
+      case 'SUMMARY_OF_N_MINS':
+        console.log('In SUMMARY_OF_N_MINS');
+        window.dispatchEvent(
+          new CustomEvent('summarize-conversation', {
             detail: {
               value: action.value,
             },

@@ -22,7 +22,7 @@ const SaveConversationModalBox = ({ onClose, text }) => {
             {text}
           </div>
         )}
-        {isConversationEmpty() && <div className='rounded border bg-red-200 p-3'>No Coversation's to Save</div>}
+        {isConversationEmpty() && <div className='rounded border bg-red-200 p-3'>No Coversation&apos;s to Save</div>}
         <div className='mt-10 flex justify-around'>
           {!isConversationEmpty() && (
             <a href={url} download='Conversation.txt'>
