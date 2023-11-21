@@ -3,6 +3,7 @@ import Meta from 'components/Meta';
 import ErrorBoundary from '../components/atoms/ErrorBoundary';
 import { requireAuth } from '../util/auth';
 import dynamic from 'next/dynamic';
+import { CommandsProvider } from '../context/CommandsProvider';
 
 const StreamingChat = dynamic(
   () =>
@@ -18,7 +19,9 @@ function ChatPage(props) {
   return (
     <ErrorBoundary fallback={<StreamingChat />}>
       <Meta title='Chat' description='Chat with GPT' />
-      <StreamingChat />
+      <CommandsProvider>
+        <StreamingChat />
+      </CommandsProvider>
     </ErrorBoundary>
   );
 }

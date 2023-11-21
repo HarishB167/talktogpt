@@ -21,6 +21,7 @@ import {
   splitTextsBySeparator,
   getSummaryOfTextFromGPT,
   whisperTranscript,
+  getConversationWithBetterNVC,
 } from './methods';
 import {
   BE_CONCISE,
@@ -39,6 +40,7 @@ import GoogleSTTPill from 'components/atoms/GoogleSTTPill';
 import { GoogleSttControlsState } from 'types/googleChat';
 import { useMutation } from 'react-query';
 import SaveConversationModalBox from 'components/atoms/SaveMessageModalBox';
+import { useCommandContext } from 'context/CommandsProvider';
 
 const TEXT_SEPARATORS = {
   PARAGRAPH_BREAK: '\n\n',
@@ -93,6 +95,8 @@ export const GoogleSttChat = () => {
   const [showBlueBubbleChat, setShowBlueBubbleChat] = useState<boolean>(false);
 
   const [saveConversationModalBox, setSaveConversationModalBox] = useState(null);
+
+  const { handleCommandIfExists } = useCommandContext();
 
   const [noti, setNoti] = useState<{
     type: 'error' | 'success';
@@ -414,6 +418,10 @@ export const GoogleSttChat = () => {
       }
 
       const reversedInterims = interimsRef.current[interimsRef.current.length - 1] ?? '';
+      if (handleCommandIfExists(reversedInterims)) {
+        interimsRef.current.pop();
+        return;
+      }
       detectVoiceCommand(reversedInterims);
     } catch (error) {
       console.error('An error occurred in onSpeechRecognized:', error);
@@ -546,17 +554,18 @@ export const GoogleSttChat = () => {
     });
   };
 
-  const handleSaveConversation = (event: any = 'default val') => {
+  const handleSaveConversation = (event: any) => {
     const durationInMinutes = event.detail.value;
+    const msg = event.detail.successMessage;
     const text = extractConversationOfLastNMinutes(messages, durationInMinutes);
 
     setSaveConversationModalBox(
       <SaveConversationModalBox onClose={() => setSaveConversationModalBox(null)} text={text} />
     );
-    showSuccessMessage(`Saving message...`);
+    showSuccessMessage(msg);
   };
 
-  const handleSummarizeConversation = async (event: any = 'default val') => {
+  const handleSummarizeConversation = async (event: any) => {
     const durationInMinutes = event.detail.value;
     let text = extractConversationOfLastNMinutes(messages, durationInMinutes);
 
@@ -575,12 +584,33 @@ export const GoogleSttChat = () => {
     ]);
   };
 
+  const handleBetterNVCCommand = async (event: any) => {
+    const durationInMinutes = event.detail.value;
+    let text = extractConversationOfLastNMinutes(messages, durationInMinutes);
+    console.log('handleBetterNVCCommand text :>> ', text);
+
+    text = await getConversationWithBetterNVC(text, auth.user?.id);
+    console.log('Better nvc text :>> ', text);
+    setMessages([
+      ...messages,
+      {
+        content: `Conversation with better NVC of last ${durationInMinutes} minutes of conversation`,
+        role: 'user',
+        id: String(Date.now()),
+        createdAt: new Date(),
+      },
+      { content: text, role: 'assistant', id: String(Date.now()), createdAt: new Date() },
+    ]);
+  };
+
   useEffect(() => {
     window.addEventListener('save-conversation', handleSaveConversation);
     window.addEventListener('summarize-conversation', handleSummarizeConversation);
+    window.addEventListener('better-nvc', handleBetterNVCCommand);
     return () => {
       window.removeEventListener('save-conversation', handleSaveConversation);
       window.removeEventListener('summarize-conversation', handleSummarizeConversation);
+      window.removeEventListener('better-nvc', handleBetterNVCCommand);
     };
   }, [messages]);
 
@@ -651,16 +681,6 @@ export const GoogleSttChat = () => {
         } else {
           showSuccessMessage(action.message);
         }
-        break;
-      case 'SAVE_CONVERSATION_N_MINS':
-        console.log('In SAVE_CONVERSATION_N_MINS');
-        window.dispatchEvent(
-          new CustomEvent('save-conversation', {
-            detail: {
-              value: action.value,
-            },
-          })
-        );
         break;
       case 'SUMMARY_OF_N_MINS':
         console.log('In SUMMARY_OF_N_MINS');
