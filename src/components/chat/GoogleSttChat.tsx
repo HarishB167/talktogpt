@@ -604,11 +604,11 @@ export const GoogleSttChat = () => {
   };
 
   useEffect(() => {
-    window.addEventListener('save-conversation', handleSaveConversation);
+    window.addEventListener('save-conversation-n-mins', handleSaveConversation);
     window.addEventListener('summarize-conversation', handleSummarizeConversation);
     window.addEventListener('better-nvc', handleBetterNVCCommand);
     return () => {
-      window.removeEventListener('save-conversation', handleSaveConversation);
+      window.removeEventListener('save-conversation-n-mins', handleSaveConversation);
       window.removeEventListener('summarize-conversation', handleSummarizeConversation);
       window.removeEventListener('better-nvc', handleBetterNVCCommand);
     };

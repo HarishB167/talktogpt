@@ -294,9 +294,11 @@ export const getSummaryOfTextFromGPT = async (text: string, userId: string) => {
 };
 
 export const getConversationWithBetterNVC = async (text: string, userId: string) => {
+  const newText = text?.replaceAll('USER', 'ME');
   const responseText = await getResponseFromGPT(
-    `Tell me in what ways USER could have communicated with better NVC in the following of conversation and ${BE_CONCISE} : "${text}"`,
+    `Tell me about some points that how I could have communicated with better NVC (non-voilent communication)
+     in the following of conversation chat, and ${BE_CONCISE} : "${newText}"`,
     userId
   );
-  return responseText.replaceAll('USER', 'you');
+  return responseText;
 };
