@@ -380,8 +380,12 @@ export const GoogleSttChat = () => {
       (typeof startKeywordDetectedRef.current == 'undefined' || !startKeywordDetectedRef.current) &&
       (typeof endKeywordDetectedRef.current == 'undefined' || !endKeywordDetectedRef.current)
     ) {
-      const voiceCommand = checkIsVoiceCommand(text);
+      if (handleCommandIfExists(text)) {
+        interimsRef.current.pop();
+        return;
+      }
 
+      const voiceCommand = checkIsVoiceCommand(text);
       if (typeof voiceCommand !== 'undefined' && voiceCommand) {
         runVoiceCommand(voiceCommand);
         return;
@@ -418,10 +422,7 @@ export const GoogleSttChat = () => {
       }
 
       const reversedInterims = interimsRef.current[interimsRef.current.length - 1] ?? '';
-      if (handleCommandIfExists(reversedInterims)) {
-        interimsRef.current.pop();
-        return;
-      }
+
       detectVoiceCommand(reversedInterims);
     } catch (error) {
       console.error('An error occurred in onSpeechRecognized:', error);
