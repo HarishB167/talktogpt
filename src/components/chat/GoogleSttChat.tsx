@@ -564,6 +564,7 @@ export const GoogleSttChat = () => {
       <SaveConversationModalBox onClose={() => setSaveConversationModalBox(null)} text={text} />
     );
     showSuccessMessage(msg);
+    startUttering(msg);
   };
 
   const handleSummarizeConversation = async (event: any) => {
@@ -583,6 +584,7 @@ export const GoogleSttChat = () => {
       },
       { content: text, role: 'assistant', id: String(Date.now()), createdAt: new Date() },
     ]);
+    startUttering(text);
   };
 
   const handleBetterNVCCommand = async (event: any) => {
@@ -602,6 +604,7 @@ export const GoogleSttChat = () => {
       },
       { content: text, role: 'assistant', id: String(Date.now()), createdAt: new Date() },
     ]);
+    startUttering(text);
   };
 
   useEffect(() => {
