@@ -1,14 +1,14 @@
 import wordsToNumbers from 'words-to-numbers';
 import BaseCommand from './BaseCommand';
-import { extractConversationOfLastNMinutes, getConversationWithBetterNVC } from './common';
+import { extractConversationOfLastNMinutes, getSummaryOfTextFromGPT } from './common';
 
-export class BetterNVC extends BaseCommand {
+export class SummaryNMinutes extends BaseCommand {
   COMMAND = {
-    command: 'better-nvc',
-    matcher: /.*communic.*(nvc|.*non.*violent.*communic.*).*minute.*/i,
-    successMessage: 'Better nvc response is as.',
+    command: 'summary-conversation-n-mins',
+    matcher: /.*(summary|summarize).*minute.*conversation.*/i,
+    successMessage: 'Conversation summarized.',
   };
-  requiredKeys = ['userId', 'messages', 'setMessages', 'startUttering', 'showErrorMessage'];
+  requiredKeys = ['userId', 'messages', 'setMessages', 'showErrorMessage', 'startUttering'];
 
   isVoiceCommand(text: string): boolean {
     return text.match(this.COMMAND.matcher) ? true : false;
@@ -28,8 +28,8 @@ export class BetterNVC extends BaseCommand {
   }
 
   async run(text: string, data) {
-    if (!this.isDataValid(data)) throw new Error(`BetterNVC : ${String(this.requiredKeys)} are required.`);
-    const { userId, messages, setMessages, startUttering, showErrorMessage } = data;
+    if (!this.isDataValid(data)) throw new Error(`SummaryNMinutes : ${String(this.requiredKeys)} are required.`);
+    const { userId, messages, setMessages, showErrorMessage, startUttering } = data;
     const durationInMinutes = this.getMinutes(text);
 
     if (!(durationInMinutes && typeof durationInMinutes === 'number')) {
@@ -38,20 +38,19 @@ export class BetterNVC extends BaseCommand {
     }
 
     let newText = extractConversationOfLastNMinutes(messages, durationInMinutes);
-    console.log('handleBetterNVCCommand text :>> ', newText);
 
-    newText = await getConversationWithBetterNVC(newText, userId);
-    console.log('Better nvc text :>> ', newText);
+    newText = await getSummaryOfTextFromGPT(newText, userId);
+    newText = newText.replace(/(\r\n|\n|\r)/gm, '');
     setMessages([
       ...messages,
       {
-        content: `Conversation with better NVC of last ${durationInMinutes} minutes of conversation`,
+        content: `Make summary of last ${durationInMinutes} minutes conversation`,
         role: 'user',
         id: String(Date.now()),
         createdAt: new Date(),
       },
       { content: newText, role: 'assistant', id: String(Date.now()), createdAt: new Date() },
     ]);
-    startUttering('Using new version.' + newText);
+    startUttering(newText);
   }
 }

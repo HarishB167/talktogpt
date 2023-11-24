@@ -31,11 +31,6 @@ export const VOICE_COMMANDS = {
     matcher: /turn off (the )?microphone/i,
     successMessage: 'Microphone is turned off.',
   },
-  SUMMARY_OF_N_MINS: {
-    command: 'summary-conversation-n-mins',
-    matcher: /.*(summary|summarize).*minute.*conversation.*/i,
-    successMessage: 'Conversation summarized.',
-  },
 } as const;
 
 export const TALKTOGPT_SOCKET_ENDPOINT =

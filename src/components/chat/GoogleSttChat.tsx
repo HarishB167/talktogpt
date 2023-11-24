@@ -21,7 +21,6 @@ import {
   splitTextsBySeparator,
   getSummaryOfTextFromGPT,
   whisperTranscript,
-  getConversationWithBetterNVC,
 } from './methods';
 import {
   BE_CONCISE,
@@ -39,7 +38,6 @@ import ChatMessage from 'components/atoms/ChatMessage';
 import GoogleSTTPill from 'components/atoms/GoogleSTTPill';
 import { GoogleSttControlsState } from 'types/googleChat';
 import { useMutation } from 'react-query';
-import SaveConversationModalBox from 'components/atoms/SaveMessageModalBox';
 import { useCommandContext } from 'context/CommandsProvider';
 
 const TEXT_SEPARATORS = {
@@ -385,6 +383,7 @@ export const GoogleSttChat = () => {
         messages,
         setSaveConversationModalBox,
         showSuccessMessage,
+        showErrorMessage,
         startUttering,
         setMessages,
       });
@@ -666,17 +665,6 @@ export const GoogleSttChat = () => {
         } else {
           showSuccessMessage(action.message);
         }
-        break;
-      case 'SUMMARY_OF_N_MINS':
-        console.log('In SUMMARY_OF_N_MINS');
-        console.log('messages in summary of n mins :>> ', messages);
-        window.dispatchEvent(
-          new CustomEvent('summarize-conversation', {
-            detail: {
-              value: action.value,
-            },
-          })
-        );
         break;
       default:
         flagsDispatch({ type: FlagsActions.STOP_LOADING });

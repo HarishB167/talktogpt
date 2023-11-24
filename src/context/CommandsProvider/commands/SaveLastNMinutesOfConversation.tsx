@@ -10,7 +10,7 @@ export class SaveLastNMinutesOfConversation extends BaseCommand {
     successMessage: 'Saving conversation...',
   };
   element = null;
-  requiredKeys = ['messages', 'setSaveConversationModalBox', 'showSuccessMessage', 'startUttering'];
+  requiredKeys = ['messages', 'setSaveConversationModalBox', 'showSuccessMessage', 'showErrorMessage', 'startUttering'];
 
   isVoiceCommand(text: string): boolean {
     return text.match(this.COMMAND.matcher) ? true : false;
@@ -32,8 +32,13 @@ export class SaveLastNMinutesOfConversation extends BaseCommand {
   run(text: string, data) {
     if (!this.isDataValid(data))
       throw new Error(`SaveLastNMinutesOfConversation : ${String(this.requiredKeys)} are required.`);
-    const { messages, setSaveConversationModalBox, showSuccessMessage, startUttering } = data;
+    const { messages, setSaveConversationModalBox, showSuccessMessage, showErrorMessage, startUttering } = data;
     const durationInMinutes = this.getMinutes(text);
+
+    if (!(durationInMinutes && typeof durationInMinutes === 'number')) {
+      showErrorMessage('Incorrect voice command. The value must be a number.');
+      return;
+    }
 
     let newText = extractConversationOfLastNMinutes(messages, durationInMinutes);
 

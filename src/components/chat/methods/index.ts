@@ -7,7 +7,6 @@ type VoiceCommandAction =
   | { type: 'SET_IS_AUTO_STOP'; value: boolean }
   | { type: 'SET_AUTO_STOP_TIMEOUT'; value: number | string }
   | { type: 'SET_MICROPHONE_OFF'; value: boolean }
-  | { type: 'SUMMARY_OF_N_MINS'; value: number | string }
   | { type: 'SHOW_MESSAGE'; messageType: 'error' | 'success'; message: string }
   | null;
 
@@ -36,17 +35,6 @@ export const getVoiceCommandAction = (voiceCommand: VoiceCommand): VoiceCommandA
     case VOICE_COMMANDS.MAKE_AUTO_STOP.command:
       return { type: 'SET_AUTO_STOP_TIMEOUT', value: voiceCommand.args };
 
-    case VOICE_COMMANDS.SUMMARY_OF_N_MINS.command:
-      if (voiceCommand.args && typeof voiceCommand.args === 'number') {
-        return { type: 'SUMMARY_OF_N_MINS', value: voiceCommand.args };
-      } else {
-        return {
-          type: 'SHOW_MESSAGE',
-          messageType: 'error',
-          message: 'Incorrect voice command. The value must be a number.',
-        };
-      }
-
     default:
       return null;
   }
@@ -73,13 +61,6 @@ export const checkIsVoiceCommand = (text: string): VoiceCommand | undefined => {
             .filter((c) => c.index !== -1);
 
           return { ...voiceCommand, args: commands.length > 0 ? commands[0].command : '' };
-        } else if (voiceCommand.command === VOICE_COMMANDS.SUMMARY_OF_N_MINS.command) {
-          let args = wordsToNumbers(text);
-          if (typeof args === 'string') {
-            const match = /\d+/.exec(args);
-            args = match ? parseInt(match[0], 10) : 0;
-          }
-          return { ...voiceCommand, args };
         } else {
           return voiceCommand;
         }

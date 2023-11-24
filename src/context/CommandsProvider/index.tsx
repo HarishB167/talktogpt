@@ -1,8 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import BaseCommand from './commands/BaseCommand';
-import { BetterNVC, SaveLastNMinutesOfConversation } from './commands';
+import { BetterNVC, SaveLastNMinutesOfConversation, TextCommand, SummaryNMinutes } from './commands';
 import { addCommandListeners, removeCommandListeners } from './CommandEventHandler';
-import { TextCommand } from './commands/TextCommand';
 
 type CommandsContextType = {
   commands: BaseCommand[];
@@ -22,6 +21,7 @@ export const useCommandContext = (): CommandsContextType => {
 export function CommandsProvider({ children }) {
   const [commands, setCommands] = useState<BaseCommand[]>([
     new SaveLastNMinutesOfConversation(),
+    new SummaryNMinutes(),
     new BetterNVC(),
     new TextCommand(),
   ]);
