@@ -592,32 +592,10 @@ export const GoogleSttChat = () => {
     startUttering(text);
   };
 
-  const handleBetterNVCCommand = async (event: any) => {
-    const durationInMinutes = event.detail.value;
-    let text = extractConversationOfLastNMinutes(messages, durationInMinutes);
-    console.log('handleBetterNVCCommand text :>> ', text);
-
-    text = await getConversationWithBetterNVC(text, auth.user?.id);
-    console.log('Better nvc text :>> ', text);
-    setMessages([
-      ...messages,
-      {
-        content: `Conversation with better NVC of last ${durationInMinutes} minutes of conversation`,
-        role: 'user',
-        id: String(Date.now()),
-        createdAt: new Date(),
-      },
-      { content: text, role: 'assistant', id: String(Date.now()), createdAt: new Date() },
-    ]);
-    startUttering(text);
-  };
-
   useEffect(() => {
     window.addEventListener('summarize-conversation', handleSummarizeConversation);
-    window.addEventListener('better-nvc', handleBetterNVCCommand);
     return () => {
       window.removeEventListener('summarize-conversation', handleSummarizeConversation);
-      window.removeEventListener('better-nvc', handleBetterNVCCommand);
     };
   }, [messages]);
 

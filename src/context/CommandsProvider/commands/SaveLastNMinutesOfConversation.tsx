@@ -10,6 +10,7 @@ export class SaveLastNMinutesOfConversation extends BaseCommand {
     successMessage: 'Saving conversation...',
   };
   element = null;
+  requiredKeys = ['messages', 'setSaveConversationModalBox', 'showSuccessMessage', 'startUttering'];
 
   isVoiceCommand(text: string): boolean {
     return text.match(this.COMMAND.matcher) ? true : false;
@@ -24,8 +25,14 @@ export class SaveLastNMinutesOfConversation extends BaseCommand {
     return args;
   }
 
-  run(text: string, { messages, setSaveConversationModalBox, showSuccessMessage, startUttering }) {
-    if (!messages) throw new Error('SaveLastNMinutesOfConversation : messages is required.');
+  isDataValid(data) {
+    return this.requiredKeys.every((item) => item in data);
+  }
+
+  run(text: string, data) {
+    if (!this.isDataValid(data))
+      throw new Error(`SaveLastNMinutesOfConversation : ${String(this.requiredKeys)} are required.`);
+    const { messages, setSaveConversationModalBox, showSuccessMessage, startUttering } = data;
     const durationInMinutes = this.getMinutes(text);
 
     let newText = extractConversationOfLastNMinutes(messages, durationInMinutes);

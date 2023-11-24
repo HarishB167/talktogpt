@@ -8,6 +8,7 @@ export class BetterNVC extends BaseCommand {
     matcher: /.*communic.*(nvc|.*non.*violent.*communic.*).*minute.*/i,
     successMessage: 'Better nvc response is as.',
   };
+  requiredKeys = ['userId', 'messages', 'setMessages', 'startUttering'];
 
   isVoiceCommand(text: string): boolean {
     return text.match(this.COMMAND.matcher) ? true : false;
@@ -22,40 +23,30 @@ export class BetterNVC extends BaseCommand {
     return args;
   }
 
-  // async handleEvent(event, data) {
-  //   console.log('In handleEvent of better nvc');
-  //   console.log('data :>> ', data);
-  //   if (!('messages' in data && 'userId' in data && 'setMessages' in data))
-  //     throw new Error('Invalid data passed to handler of BetterNVC command.');
+  isDataValid(data) {
+    return this.requiredKeys.every((item) => item in data);
+  }
 
-  //   const { userId, messages, setMessages } = data;
-  //   const durationInMinutes = event.detail.value;
-  //   let text = extractConversationOfLastNMinutes(messages, durationInMinutes);
-  //   console.log('handleBetterNVCCommand text :>> ', text);
+  async run(text: string, data) {
+    if (!this.isDataValid(data)) throw new Error(`BetterNVC : ${String(this.requiredKeys)} are required.`);
+    const { userId, messages, setMessages, startUttering } = data;
+    const durationInMinutes = this.getMinutes(text);
 
-  //   text = await getConversationWithBetterNVC(text, userId);
-  //   console.log('Better nvc text :>> ', text);
-  //   setMessages([
-  //     ...messages,
-  //     {
-  //       content: `Conversation with better NVC of last ${durationInMinutes} minutes of conversation`,
-  //       role: 'user',
-  //       id: String(Date.now()),
-  //       createdAt: new Date(),
-  //     },
-  //     { content: text, role: 'assistant', id: String(Date.now()), createdAt: new Date() },
-  //   ]);
-  // }
+    let newText = extractConversationOfLastNMinutes(messages, durationInMinutes);
+    console.log('handleBetterNVCCommand text :>> ', newText);
 
-  run(text: string) {
-    console.log('Sending event NVC');
-    window.dispatchEvent(
-      new CustomEvent(this.COMMAND.command, {
-        detail: {
-          value: this.getMinutes(text),
-          successMessage: this.COMMAND.successMessage,
-        },
-      })
-    );
+    newText = await getConversationWithBetterNVC(newText, userId);
+    console.log('Better nvc text :>> ', newText);
+    setMessages([
+      ...messages,
+      {
+        content: `Conversation with better NVC of last ${durationInMinutes} minutes of conversation`,
+        role: 'user',
+        id: String(Date.now()),
+        createdAt: new Date(),
+      },
+      { content: newText, role: 'assistant', id: String(Date.now()), createdAt: new Date() },
+    ]);
+    startUttering('Using new version.' + newText);
   }
 }
