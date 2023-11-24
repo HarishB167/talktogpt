@@ -2,11 +2,12 @@ import React, { useContext, useEffect, useState } from 'react';
 import BaseCommand from './commands/BaseCommand';
 import { BetterNVC, SaveLastNMinutesOfConversation } from './commands';
 import { addCommandListeners, removeCommandListeners } from './CommandEventHandler';
+import { TextCommand } from './commands/TextCommand';
 
 type CommandsContextType = {
   commands: BaseCommand[];
   useCommand: (command: BaseCommand) => void;
-  handleCommandIfExists: (text: string) => boolean;
+  handleCommandIfExists: (text: string, data: object) => boolean;
   lastRunCommand: BaseCommand;
   addCommandListeners: (data: any) => void;
   removeCommandListeners: (data: any) => void;
@@ -19,7 +20,11 @@ export const useCommandContext = (): CommandsContextType => {
 };
 
 export function CommandsProvider({ children }) {
-  const [commands, setCommands] = useState<BaseCommand[]>([new SaveLastNMinutesOfConversation(), new BetterNVC()]);
+  const [commands, setCommands] = useState<BaseCommand[]>([
+    new SaveLastNMinutesOfConversation(),
+    new BetterNVC(),
+    new TextCommand(),
+  ]);
   const [element, setElement] = useState(null);
   const [lastRunCommand, setLastRunCommand] = useState<BaseCommand>(null);
 
@@ -28,13 +33,13 @@ export function CommandsProvider({ children }) {
     else setCommands([...commands, command]);
   }
 
-  function handleCommandIfExists(text: string): boolean {
+  function handleCommandIfExists(text: string, data: object): boolean {
     const command = commands.find((cmd) => cmd.isVoiceCommand(text));
     setLastRunCommand(command);
     console.log('command :>> ', command);
     if (command) {
       console.log('Running command : ', text);
-      command.run(text);
+      command.run(text, data);
       return true;
     }
     return false;
@@ -44,6 +49,10 @@ export function CommandsProvider({ children }) {
   //   setElement(lastRunCommand?.element);
   //   console.log('changing element');
   // }, [lastRunCommand, lastRunCommand?.element]);
+
+  useEffect(() => {
+    console.log('Commands used are : ' + commands.map((item) => item.COMMAND.command).join(', '));
+  }, []);
 
   const value = {
     commands,

@@ -380,7 +380,15 @@ export const GoogleSttChat = () => {
       (typeof startKeywordDetectedRef.current == 'undefined' || !startKeywordDetectedRef.current) &&
       (typeof endKeywordDetectedRef.current == 'undefined' || !endKeywordDetectedRef.current)
     ) {
-      if (handleCommandIfExists(text)) {
+      const isCommandHandled = handleCommandIfExists(text, {
+        userId: auth?.user.id,
+        messages,
+        setSaveConversationModalBox,
+        showSuccessMessage,
+        startUttering,
+        setMessages,
+      });
+      if (isCommandHandled) {
         interimsRef.current.pop();
         return;
       }
@@ -509,14 +517,19 @@ export const GoogleSttChat = () => {
     }
   };
 
+  const registerSocketListenerForReceiveAudioText = () => {
+    socketRef.current?.off('receive_audio_text');
+    socketRef.current?.on('receive_audio_text', (data) => {
+      onSpeechRecognized(data);
+    });
+  };
+
   const prepareSocket = async () => {
     socketRef.current = io(TALKTOGPT_SOCKET_ENDPOINT);
 
     socketRef.current.on('connect', () => {});
 
-    socketRef.current.on('receive_audio_text', (data) => {
-      onSpeechRecognized(data);
-    });
+    registerSocketListenerForReceiveAudioText();
 
     socketRef.current.on('disconnect', () => {});
 
@@ -524,6 +537,10 @@ export const GoogleSttChat = () => {
       showErrorMessage(error);
     });
   };
+
+  useEffect(() => {
+    registerSocketListenerForReceiveAudioText();
+  }, [messages]);
 
   const releaseHark = () => {
     // remove hark event listeners
@@ -553,18 +570,6 @@ export const GoogleSttChat = () => {
       stopUttering();
       flagsDispatch({ type: FlagsActions.STOP_SPEAKING });
     });
-  };
-
-  const handleSaveConversation = (event: any) => {
-    const durationInMinutes = event.detail.value;
-    const msg = event.detail.successMessage;
-    const text = extractConversationOfLastNMinutes(messages, durationInMinutes);
-
-    setSaveConversationModalBox(
-      <SaveConversationModalBox onClose={() => setSaveConversationModalBox(null)} text={text} />
-    );
-    showSuccessMessage(msg);
-    startUttering(msg);
   };
 
   const handleSummarizeConversation = async (event: any) => {
@@ -608,11 +613,9 @@ export const GoogleSttChat = () => {
   };
 
   useEffect(() => {
-    window.addEventListener('save-conversation-n-mins', handleSaveConversation);
     window.addEventListener('summarize-conversation', handleSummarizeConversation);
     window.addEventListener('better-nvc', handleBetterNVCCommand);
     return () => {
-      window.removeEventListener('save-conversation-n-mins', handleSaveConversation);
       window.removeEventListener('summarize-conversation', handleSummarizeConversation);
       window.removeEventListener('better-nvc', handleBetterNVCCommand);
     };
@@ -688,6 +691,7 @@ export const GoogleSttChat = () => {
         break;
       case 'SUMMARY_OF_N_MINS':
         console.log('In SUMMARY_OF_N_MINS');
+        console.log('messages in summary of n mins :>> ', messages);
         window.dispatchEvent(
           new CustomEvent('summarize-conversation', {
             detail: {

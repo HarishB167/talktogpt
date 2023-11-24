@@ -83,3 +83,12 @@ export const getConversationWithBetterNVC = async (text: string, userId: string)
   );
   return responseText;
 };
+
+export const processTextForTextCommand = async (text: string, userId: string) => {
+  const responseText = await getResponseFromGPT(
+    `Extract person name and message from following statement in format {"name": "", "message": ""}
+     and remove reference of twilio api, and ${BE_CONCISE} : "${text}"`,
+    userId
+  );
+  return responseText.trim();
+};

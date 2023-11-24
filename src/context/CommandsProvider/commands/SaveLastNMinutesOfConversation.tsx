@@ -24,31 +24,16 @@ export class SaveLastNMinutesOfConversation extends BaseCommand {
     return args;
   }
 
-  // handleEvent(event, { messages }) {
-  //   const durationInMinutes = event.detail.value;
-  //   const text = extractConversationOfLastNMinutes(messages, durationInMinutes);
-  //   console.log('Element set');
-  //   const self = this;
-  //   this.element = (
-  //     <SaveConversationModalBox
-  //       onClose={() => {
-  //         self.element = null;
-  //         console.log('self :>> ', self);
-  //       }}
-  //       text={text}
-  //     />
-  //   );
-  // }
+  run(text: string, { messages, setSaveConversationModalBox, showSuccessMessage, startUttering }) {
+    if (!messages) throw new Error('SaveLastNMinutesOfConversation : messages is required.');
+    const durationInMinutes = this.getMinutes(text);
 
-  run(text: string) {
-    console.log('In SAVE_CONVERSATION_N_MINS 2');
-    window.dispatchEvent(
-      new CustomEvent('save-conversation-n-mins', {
-        detail: {
-          value: this.getMinutes(text),
-          successMessage: this.COMMAND.successMessage,
-        },
-      })
+    let newText = extractConversationOfLastNMinutes(messages, durationInMinutes);
+
+    setSaveConversationModalBox(
+      <SaveConversationModalBox onClose={() => setSaveConversationModalBox(null)} text={newText} />
     );
+    showSuccessMessage(this.COMMAND.successMessage);
+    startUttering(this.COMMAND.successMessage);
   }
 }

@@ -15,7 +15,7 @@ class BaseCommand {
     //
   }
 
-  run(text: string) {
+  run(text: string, data: object) {
     //
   }
 
