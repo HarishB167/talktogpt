@@ -1,6 +1,6 @@
 import ModalBox from './ModalBox';
 
-const SaveConversationModalBox = ({ onClose, text }) => {
+const SaveConversationModalBox = ({ onClose, text, audio }) => {
   const url = 'data:application/octet-stream;base64,' + btoa(text);
 
   const handleClose = () => {
@@ -23,13 +23,21 @@ const SaveConversationModalBox = ({ onClose, text }) => {
           </div>
         )}
         {isConversationEmpty() && <div className='rounded border bg-red-200 p-3'>No Coversation&apos;s to Save</div>}
-        <div className='mt-10 flex justify-around'>
+        <div className='mt-10 flex flex-wrap items-center justify-around gap-1'>
           {!isConversationEmpty() && (
             <a href={url} download='Conversation.txt'>
               <Button>Save</Button>
             </a>
           )}
           <Button onClick={handleClose}>Cancel</Button>
+          {audio && (
+            <>
+              <audio controls src={URL.createObjectURL(audio)} />
+              <a href={URL.createObjectURL(audio)} download='Conversation.wav'>
+                <Button>Save audio</Button>
+              </a>
+            </>
+          )}
         </div>
       </div>
     </ModalBox>
@@ -40,7 +48,7 @@ export default SaveConversationModalBox;
 
 const Button = ({ children, ...rest }) => {
   return (
-    <button className='rounded-full bg-blue-500 py-2 px-4 font-bold text-white hover:bg-blue-700' {...rest}>
+    <button className='h-fit rounded-full bg-blue-500 py-2 px-4 font-bold text-white hover:bg-blue-700' {...rest}>
       {children}
     </button>
   );

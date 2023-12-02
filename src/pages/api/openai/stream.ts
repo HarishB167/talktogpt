@@ -1,9 +1,5 @@
 import { OpenAIStream, StreamingTextResponse } from 'ai';
-import {
-  Configuration,
-  OpenAIApi,
-  type ChatCompletionRequestMessage,
-} from 'openai-edge';
+import { Configuration, OpenAIApi, type ChatCompletionRequestMessage } from 'openai-edge';
 
 // Create an OpenAI API client (that's edge friendly!)
 const openai = new OpenAIApi(

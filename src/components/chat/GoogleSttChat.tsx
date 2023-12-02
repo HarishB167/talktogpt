@@ -12,15 +12,14 @@ import {
   blobToBase64,
   checkIsVoiceCommand,
   detectEndKeyword,
-  extractConversationOfLastNMinutes,
   extractStartKeyword,
   getVoiceCommandAction,
   removeInitialKeyword,
   removeTerminatorKeyword,
   sanitizeText,
   splitTextsBySeparator,
-  getSummaryOfTextFromGPT,
   whisperTranscript,
+  textToSpeech,
 } from './methods';
 import {
   BE_CONCISE,
@@ -93,6 +92,7 @@ export const GoogleSttChat = () => {
   const [showBlueBubbleChat, setShowBlueBubbleChat] = useState<boolean>(false);
 
   const [saveConversationModalBox, setSaveConversationModalBox] = useState(null);
+  const [messagesAudio, setMessagesAudio] = useState([]);
 
   const { handleCommandIfExists } = useCommandContext();
 
@@ -381,6 +381,7 @@ export const GoogleSttChat = () => {
       const isCommandHandled = handleCommandIfExists(text, {
         userId: auth?.user.id,
         messages,
+        messagesAudio,
         setSaveConversationModalBox,
         showSuccessMessage,
         showErrorMessage,
@@ -480,6 +481,10 @@ export const GoogleSttChat = () => {
   const onTranscribe = async () => {
     let text = '';
     if (isWhisperEnabled) {
+      setMessagesAudio((prevMsg) => [
+        ...prevMsg,
+        { datetime: new Date(), audioFile: transcript.blob, speaker: 'user' },
+      ]);
       const transcribed = await transcribeAudio(transcript.blob);
       const transcriptionText = handleTranscriptionResults(transcribed);
       if (!transcriptionText) return;
@@ -539,7 +544,7 @@ export const GoogleSttChat = () => {
 
   useEffect(() => {
     registerSocketListenerForReceiveAudioText();
-  }, [messages]);
+  }, [messages, messagesAudio]);
 
   const releaseHark = () => {
     // remove hark event listeners
@@ -570,33 +575,6 @@ export const GoogleSttChat = () => {
       flagsDispatch({ type: FlagsActions.STOP_SPEAKING });
     });
   };
-
-  const handleSummarizeConversation = async (event: any) => {
-    const durationInMinutes = event.detail.value;
-    let text = extractConversationOfLastNMinutes(messages, durationInMinutes);
-
-    text = await getSummaryOfTextFromGPT(text, auth.user?.id);
-    text = text.replace(/(\r\n|\n|\r)/gm, '');
-    console.log('Summarized text :>> ', text);
-    setMessages([
-      ...messages,
-      {
-        content: `Make summary of last ${durationInMinutes} minutes conversation`,
-        role: 'user',
-        id: String(Date.now()),
-        createdAt: new Date(),
-      },
-      { content: text, role: 'assistant', id: String(Date.now()), createdAt: new Date() },
-    ]);
-    startUttering(text);
-  };
-
-  useEffect(() => {
-    window.addEventListener('summarize-conversation', handleSummarizeConversation);
-    return () => {
-      window.removeEventListener('summarize-conversation', handleSummarizeConversation);
-    };
-  }, [messages]);
 
   const toggleIsAutoStop = async (value: boolean) => {
     const newSettings = {
@@ -880,8 +858,16 @@ export const GoogleSttChat = () => {
   //   updateUserSettings();
   // }, [auth.user.id, createSettingsMutation, userSettings, isLoadingSettings])
 
+  const addAudioResponseOfAI = async (text: string) => {
+    const data = await textToSpeech(text);
+    setMessagesAudio((prevMsgs) => [...prevMsgs, { datetime: new Date(), audioFile: data, speaker: 'assistant' }]);
+  };
+
   useEffect(() => {
-    if (firstMessage && storedMessagesRef.current.length === 1) startUttering(firstMessage);
+    if (firstMessage && storedMessagesRef.current.length === 1) {
+      startUttering(firstMessage);
+    }
+    if (firstMessage) addAudioResponseOfAI(firstMessage);
   }, [firstMessage, startUttering]);
 
   useEffect(() => {

@@ -2,6 +2,7 @@ import { VoiceCommand } from '../../../types/useWhisperTypes';
 import wordsToNumbers from 'words-to-numbers';
 import { TERMINATOR_WORDS, WAKE_WORDS, VOICE_COMMANDS, BE_CONCISE } from '../constants';
 import { Message } from 'ai';
+import toWav from 'audiobuffer-to-wav';
 
 type VoiceCommandAction =
   | { type: 'SET_IS_AUTO_STOP'; value: boolean }
@@ -229,57 +230,21 @@ export const extractConversationOfLastNMinutes = (messages: Message[], minutes: 
   return prepareMessagesForTextExport(filteredMessages);
 };
 
-const getResponseFromGPT = async (text: string, userId: string) => {
-  const res = await fetch(`/api/openai/stream`, {
+export const textToSpeech = async (text: string) => {
+  const res = await fetch(`/api/openai/tts`, {
     method: 'POST',
     body: JSON.stringify({
-      messages: [
-        {
-          content: text,
-          role: 'user',
-        },
-      ],
-      userId,
+      text,
     }),
   });
 
-  const reader = res.body.getReader();
-  let stream = new ReadableStream({
-    start(controller) {
-      return pump();
-      function pump() {
-        return reader.read().then(({ done, value }) => {
-          if (done) {
-            controller.close();
-            return;
-          }
-          controller.enqueue(value);
-          return pump();
-        });
-      }
-    },
+  const audioContext = new AudioContext();
+
+  const buffer = await audioContext.decodeAudioData(await res.arrayBuffer());
+  const wav = toWav(buffer);
+  var blob = new Blob([new DataView(wav)], {
+    type: 'audio/wav',
   });
 
-  let newRes = new Response(stream);
-  let data = await newRes.text();
-
-  return data;
-};
-
-export const getSummaryOfTextFromGPT = async (text: string, userId: string) => {
-  const responseText = await getResponseFromGPT(
-    `Make summary of following conversation and ${BE_CONCISE} : "${text}"`,
-    userId
-  );
-  return responseText;
-};
-
-export const getConversationWithBetterNVC = async (text: string, userId: string) => {
-  const newText = text?.replaceAll('USER', 'ME');
-  const responseText = await getResponseFromGPT(
-    `Tell me about some points that how I could have communicated with better NVC (non-voilent communication)
-     in the following of conversation chat, and ${BE_CONCISE} : "${newText}"`,
-    userId
-  );
-  return responseText;
+  return blob;
 };
