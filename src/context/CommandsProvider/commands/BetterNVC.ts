@@ -52,6 +52,6 @@ export class BetterNVC extends BaseCommand {
       },
       { content: newText, role: 'assistant', id: String(Date.now()), createdAt: new Date() },
     ]);
-    startUttering('Using new version.' + newText);
+    startUttering('Using new version. ' + newText);
   }
 }

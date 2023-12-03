@@ -230,21 +230,27 @@ export const extractConversationOfLastNMinutes = (messages: Message[], minutes: 
   return prepareMessagesForTextExport(filteredMessages);
 };
 
-export const textToSpeech = async (text: string) => {
-  const res = await fetch(`/api/openai/tts`, {
-    method: 'POST',
-    body: JSON.stringify({
-      text,
-    }),
-  });
+export const textToSpeech = async (text: string, retryTimes: number = 10) => {
+  for (let i = 0; i < retryTimes; i++) {
+    const res = await fetch(`/api/openai/tts`, {
+      method: 'POST',
+      body: JSON.stringify({
+        text,
+      }),
+    });
 
-  const audioContext = new AudioContext();
+    if (res.ok) {
+      const audioContext = new AudioContext();
 
-  const buffer = await audioContext.decodeAudioData(await res.arrayBuffer());
-  const wav = toWav(buffer);
-  var blob = new Blob([new DataView(wav)], {
-    type: 'audio/wav',
-  });
+      const buffer = await audioContext.decodeAudioData(await res.arrayBuffer());
+      const wav = toWav(buffer);
+      var blob = new Blob([new DataView(wav)], {
+        type: 'audio/wav',
+      });
 
-  return blob;
+      return blob;
+    } else {
+      console.log('Unable to get tts response from openai. Retrying...');
+    }
+  }
 };

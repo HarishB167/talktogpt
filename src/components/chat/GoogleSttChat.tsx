@@ -92,7 +92,8 @@ export const GoogleSttChat = () => {
   const [showBlueBubbleChat, setShowBlueBubbleChat] = useState<boolean>(false);
 
   const [saveConversationModalBox, setSaveConversationModalBox] = useState(null);
-  const [messagesAudio, setMessagesAudio] = useState([]);
+  const messagesRef = useRef<object[]>([]);
+  const messagesAudioRef = useRef<object[]>([]);
 
   const { handleCommandIfExists } = useCommandContext();
 
@@ -236,6 +237,7 @@ export const GoogleSttChat = () => {
     isReadyToSpeech.current = false;
     startUttering(storedMessagesRef.current[lastSpeechIndexRef.current]);
   }
+  messagesRef.current = messages;
 
   const forceStopRecording = async () => {
     flagsDispatch({ type: FlagsActions.START_LOADING });
@@ -380,13 +382,21 @@ export const GoogleSttChat = () => {
     ) {
       const isCommandHandled = handleCommandIfExists(text, {
         userId: auth?.user.id,
-        messages,
-        messagesAudio,
+        messages: messagesRef.current,
+        messagesAudio: messagesAudioRef.current,
         setSaveConversationModalBox,
         showSuccessMessage,
         showErrorMessage,
         startUttering,
-        setMessages,
+        setMessages: (msg) => {
+          const newMessages = msg.slice(messagesRef.current.length);
+          setMessages([...msg]);
+          if (newMessages.length > 1) {
+            newMessages.forEach((item) => {
+              addAudioResponseOfAI(item.content, item.role);
+            });
+          }
+        },
       });
       if (isCommandHandled) {
         interimsRef.current.pop();
@@ -481,14 +491,16 @@ export const GoogleSttChat = () => {
   const onTranscribe = async () => {
     let text = '';
     if (isWhisperEnabled) {
-      setMessagesAudio((prevMsg) => [
-        ...prevMsg,
-        { datetime: new Date(), audioFile: transcript.blob, speaker: 'user' },
-      ]);
       const transcribed = await transcribeAudio(transcript.blob);
       const transcriptionText = handleTranscriptionResults(transcribed);
       if (!transcriptionText) return;
       text = removeTerminatorKeyword(transcriptionText, terminatorwordsRef.current);
+      messagesAudioRef.current.push({
+        datetime: new Date(),
+        audioFile: transcript.blob,
+        speaker: 'user',
+        text: text,
+      });
     } else {
       if (!openaiRequest) return;
       text = removeTerminatorKeyword(openaiRequest, terminatorwordsRef.current);
@@ -541,10 +553,6 @@ export const GoogleSttChat = () => {
       showErrorMessage(error);
     });
   };
-
-  useEffect(() => {
-    registerSocketListenerForReceiveAudioText();
-  }, [messages, messagesAudio]);
 
   const releaseHark = () => {
     // remove hark event listeners
@@ -858,9 +866,9 @@ export const GoogleSttChat = () => {
   //   updateUserSettings();
   // }, [auth.user.id, createSettingsMutation, userSettings, isLoadingSettings])
 
-  const addAudioResponseOfAI = async (text: string) => {
+  const addAudioResponseOfAI = async (text: string, speaker = 'assistant') => {
     const data = await textToSpeech(text);
-    setMessagesAudio((prevMsgs) => [...prevMsgs, { datetime: new Date(), audioFile: data, speaker: 'assistant' }]);
+    messagesAudioRef.current.push({ datetime: new Date(), audioFile: data, speaker, text });
   };
 
   useEffect(() => {
