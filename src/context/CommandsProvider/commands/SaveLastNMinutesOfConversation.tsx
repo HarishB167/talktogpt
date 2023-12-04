@@ -108,6 +108,10 @@ export class SaveLastNMinutesOfConversation extends BaseCommand {
       return false;
     });
 
+    filteredAudioMessages.sort((a, b) => {
+      return a.datetime.getTime() - b.datetime.getTime();
+    });
+
     let joinedAudioMessage = null;
     if (filteredAudioMessages.length > 0) {
       joinedAudioMessage = await this.joinAudioMessages(filteredAudioMessages);

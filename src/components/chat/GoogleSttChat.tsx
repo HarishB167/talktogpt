@@ -95,6 +95,11 @@ export const GoogleSttChat = () => {
   const messagesRef = useRef<object[]>([]);
   const messagesAudioRef = useRef<object[]>([]);
 
+  useEffect(() =>{
+    if (messagesAudioRef.current.length > messagesRef.current.length)
+      messagesAudioRef.current = messagesAudioRef.current.slice(0,messagesRef.current.length)
+  }, [messagesRef.current.length])
+
   const { handleCommandIfExists } = useCommandContext();
 
   const [noti, setNoti] = useState<{
@@ -867,8 +872,9 @@ export const GoogleSttChat = () => {
   // }, [auth.user.id, createSettingsMutation, userSettings, isLoadingSettings])
 
   const addAudioResponseOfAI = async (text: string, speaker = 'assistant') => {
+    const datetime = new Date()
     const data = await textToSpeech(text);
-    messagesAudioRef.current.push({ datetime: new Date(), audioFile: data, speaker, text });
+    messagesAudioRef.current.push({ datetime, audioFile: data, speaker, text });
   };
 
   useEffect(() => {
